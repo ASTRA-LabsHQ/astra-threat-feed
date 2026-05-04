@@ -93,9 +93,6 @@ astra-threat-feed/
 └── Makefile                Common tasks (build, sync, clean, etc.)
 ```
 
-The `.claude/` directory contains tooling used during development and is excluded
-from the repository via `.gitignore`.
-
 ## MISP Feed Structure
 
 After running `sync` or `generate`, the `output/` directory contains:

@@ -1,4 +1,4 @@
-astra-feed
+/astra-feed
 *.db
 output/
 .claude/
