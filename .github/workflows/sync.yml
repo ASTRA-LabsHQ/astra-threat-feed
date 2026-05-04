@@ -47,3 +47,4 @@ jobs:
           publish_branch: gh-pages
           commit_message: 'chore: sync threat feed'
           force_orphan: true
+          cname: feed.astra-labs.co
