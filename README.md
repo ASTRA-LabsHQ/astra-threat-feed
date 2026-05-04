@@ -4,21 +4,31 @@ An open-source threat intelligence feed aggregator built in Go. It collects indi
 compromise (IOCs) from multiple free, publicly available sources, normalizes and deduplicates
 them in a local SQLite database, and publishes a standards-compliant
 [MISP](https://www.misp-project.org/) feed as static JSON files. The feed is automatically
-refreshed every six hours via GitHub Actions and served through GitHub Pages.
+refreshed every six hours via GitHub Actions and served at:
 
-The feed URL is: `https://astra-labshq.github.io/astra-threat-feed/`
+**`https://feed.astra-labs.co/`**
+
+## What This Project Demonstrates
+
+- Aggregating and normalizing threat intelligence from multiple open-source feeds into a
+  single, unified MISP-compatible format
+- Implementing IOC deduplication and structured storage using SQLite
+- Automating feed collection, generation, and publishing using GitHub Actions on a cron schedule
+- Applying standard CTI data formats: MISP events, TLP classification, attribute categorization,
+  and `to_ids` flagging for detection tooling integration
+- Hosting a live, publicly consumable threat feed over HTTPS with a custom domain
 
 ## Feed Sources
 
-| Source | IOC Types | Category |
-|--------|-----------|----------|
+| Source | IOC Types | Threat Category |
+|--------|-----------|-----------------|
 | [Feodo Tracker](https://feodotracker.abuse.ch/) | IP | Botnet command and control servers |
 | [URLhaus](https://urlhaus.abuse.ch/) | Domain | Active malware distribution sites |
 | [ThreatFox](https://threatfox.abuse.ch/) | IP, Domain, MD5, SHA256 | Mixed malware IOCs |
 | [MalwareBazaar](https://bazaar.abuse.ch/) | MD5, SHA1, SHA256 | Malware file hashes |
 | [Emerging Threats](https://rules.emergingthreats.net/) | IP | Compromised hosts |
 
-All sources are free to use and require no API keys.
+All sources are free and require no API keys.
 
 ## IOC Coverage
 
@@ -27,7 +37,7 @@ All sources are free to use and require no API keys.
 - **File hashes** (`md5`, `sha1`, `sha256`): Malware samples from MalwareBazaar and ThreatFox
 
 All attributes are tagged with [TLP:CLEAR](https://www.first.org/tlp/) and marked
-`to_ids: true`, indicating they are suitable for use in detection tooling.
+`to_ids: true`, indicating they are suitable for use in automated detection tooling.
 
 ## Requirements
 
@@ -109,21 +119,12 @@ threat level, TLP tag, and category metadata in the MISP format.
 ## Automated Publishing via GitHub Actions
 
 The workflow at [`.github/workflows/sync.yml`](.github/workflows/sync.yml) runs every six
-hours on a cron schedule (and can be triggered manually from the Actions tab). It:
+hours on a cron schedule and can be triggered manually from the Actions tab. It:
 
 1. Builds the `astra-feed` binary from source
 2. Runs `astra-feed sync` to pull fresh IOCs and generate MISP JSON files
-3. Pushes the contents of `output/` to the `gh-pages` branch using
-   [peaceiris/actions-gh-pages](https://github.com/peaceiris/actions-gh-pages)
-
-GitHub Pages then serves the `gh-pages` branch at the feed URL above.
-
-### Enabling GitHub Pages
-
-1. Go to the repository **Settings > Pages**
-2. Set the source to **Deploy from a branch**
-3. Select the `gh-pages` branch and the `/ (root)` folder
-4. Save — the feed URL will be active after the first workflow run
+3. Pushes the contents of `output/` to the `gh-pages` branch
+4. GitHub Pages serves the `gh-pages` branch at `https://feed.astra-labs.co/`
 
 ### Adding the Feed to a MISP Instance
 
@@ -134,7 +135,7 @@ In your MISP instance, navigate to **Sync Actions > List Feeds > Add Feed** and 
 | Name | Astra Labs Threat Feed |
 | Provider | Astra Labs |
 | Input Source | Network |
-| URL | `https://astra-labshq.github.io/astra-threat-feed/` |
+| URL | `https://feed.astra-labs.co/` |
 | Feed format | MISP Feed |
 
 ## Repository Layout
