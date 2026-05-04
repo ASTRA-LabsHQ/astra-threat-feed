@@ -3,10 +3,10 @@ package misp
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
 	"strconv"
+	"text/template"
 	"time"
 
 	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/config"
@@ -53,13 +53,12 @@ var feedMetadata = map[string]feedMeta{
 	},
 }
 
-// feedDisplay holds the data passed to the index.html template.
-type feedDisplay struct {
-	Name      string
-	IOCTypes  string
-	Category  string
-	URL       string
-	Count     int
+type feedRow struct {
+	Name     string
+	IOCTypes []string
+	Category string
+	URL      string
+	Count    int
 }
 
 type indexData struct {
@@ -67,19 +66,21 @@ type indexData struct {
 	FeedURL   string
 	RepoURL   string
 	OrgName   string
-	Feeds     []feedDisplay
+	Feeds     []feedRow
 	Total     int
 }
 
-var feedDisplay_ = map[string]feedDisplay{
-	"feodo_tracker":   {Name: "Feodo Tracker", IOCTypes: "IP", Category: "Botnet C2 servers", URL: "https://feodotracker.abuse.ch/"},
-	"urlhaus":         {Name: "URLhaus", IOCTypes: "Domain", Category: "Malware distribution sites", URL: "https://urlhaus.abuse.ch/"},
-	"threatfox":       {Name: "ThreatFox", IOCTypes: "IP, Domain, MD5, SHA256", Category: "Mixed malware IOCs", URL: "https://threatfox.abuse.ch/"},
-	"malware_bazaar":  {Name: "MalwareBazaar", IOCTypes: "MD5, SHA1, SHA256", Category: "Malware file hashes", URL: "https://bazaar.abuse.ch/"},
-	"emerging_threats":{Name: "Emerging Threats", IOCTypes: "IP", Category: "Compromised hosts", URL: "https://rules.emergingthreats.net/"},
+var feedInfo = []feedRow{
+	{Name: "Feodo Tracker", IOCTypes: []string{"ip-dst"}, Category: "Botnet C2 servers", URL: "https://feodotracker.abuse.ch/", Count: 0},
+	{Name: "URLhaus", IOCTypes: []string{"domain"}, Category: "Malware distribution sites", URL: "https://urlhaus.abuse.ch/", Count: 0},
+	{Name: "ThreatFox", IOCTypes: []string{"ip-dst", "domain", "md5", "sha256"}, Category: "Mixed malware IOCs", URL: "https://threatfox.abuse.ch/", Count: 0},
+	{Name: "MalwareBazaar", IOCTypes: []string{"md5", "sha1", "sha256"}, Category: "Malware file hashes", URL: "https://bazaar.abuse.ch/", Count: 0},
+	{Name: "Emerging Threats", IOCTypes: []string{"ip-dst"}, Category: "Compromised hosts", URL: "https://rules.emergingthreats.net/", Count: 0},
 }
 
-var indexTmplSrc = `<!DOCTYPE html>
+var feedKeyOrder = []string{"feodo_tracker", "urlhaus", "threatfox", "malware_bazaar", "emerging_threats"}
+
+var indexTmpl = template.Must(template.New("index").Parse(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -87,86 +88,33 @@ var indexTmplSrc = `<!DOCTYPE html>
   <title>Astra Labs Threat Feed</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-      background: #0d1117;
-      color: #c9d1d9;
-      line-height: 1.6;
-      padding: 2rem 1rem;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; background: #0d1117; color: #c9d1d9; line-height: 1.6; padding: 2rem 1rem; }
     .container { max-width: 860px; margin: 0 auto; }
     header { border-bottom: 1px solid #21262d; padding-bottom: 1.5rem; margin-bottom: 2rem; }
     h1 { font-size: 1.75rem; color: #f0f6fc; font-weight: 600; }
     h1 span { color: #58a6ff; }
     .subtitle { color: #8b949e; margin-top: 0.4rem; font-size: 0.95rem; }
-    h2 { font-size: 1rem; color: #f0f6fc; font-weight: 600; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.8rem; }
+    h2 { color: #f0f6fc; font-weight: 600; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.8rem; }
     .section { margin-bottom: 2rem; }
-    .card {
-      background: #161b22;
-      border: 1px solid #21262d;
-      border-radius: 6px;
-      padding: 1.25rem 1.5rem;
-    }
-    .feed-url {
-      font-family: monospace;
-      font-size: 0.9rem;
-      color: #58a6ff;
-      word-break: break-all;
-    }
-    .misp-block {
-      background: #0d1117;
-      border: 1px solid #21262d;
-      border-radius: 4px;
-      padding: 0.75rem 1rem;
-      margin-top: 0.75rem;
-      font-size: 0.85rem;
-    }
+    .card { background: #161b22; border: 1px solid #21262d; border-radius: 6px; padding: 1.25rem 1.5rem; }
+    .feed-url { font-family: monospace; font-size: 0.9rem; color: #58a6ff; word-break: break-all; }
+    .misp-block { background: #0d1117; border: 1px solid #21262d; border-radius: 4px; padding: 0.75rem 1rem; margin-top: 0.75rem; font-size: 0.85rem; }
     .misp-block table { width: 100%; border-collapse: collapse; }
     .misp-block td { padding: 0.2rem 0.5rem; vertical-align: top; }
     .misp-block td:first-child { color: #8b949e; white-space: nowrap; padding-right: 1rem; }
     .misp-block td:last-child { font-family: monospace; color: #e6edf3; }
     table.sources { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-    table.sources th {
-      text-align: left;
-      color: #8b949e;
-      font-weight: 500;
-      padding: 0.4rem 0.75rem;
-      border-bottom: 1px solid #21262d;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+    table.sources th { text-align: left; color: #8b949e; font-weight: 500; padding: 0.4rem 0.75rem; border-bottom: 1px solid #21262d; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
     table.sources td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #161b22; vertical-align: middle; }
     table.sources tr:last-child td { border-bottom: none; }
     table.sources a { color: #58a6ff; text-decoration: none; }
-    table.sources a:hover { text-decoration: underline; }
-    .badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 12px;
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #9ca3af;
-      margin-right: 0.25rem;
-      font-family: monospace;
-    }
+    .badge { display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 12px; background: #1f2937; border: 1px solid #374151; color: #9ca3af; margin-right: 0.25rem; font-family: monospace; }
     .count { color: #8b949e; font-size: 0.8rem; text-align: right; }
-    .meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+    .meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
     .updated { color: #8b949e; font-size: 0.8rem; }
     footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #21262d; font-size: 0.8rem; color: #8b949e; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
     footer a { color: #58a6ff; text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
-    .tlp {
-      display: inline-block;
-      font-size: 0.7rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 3px;
-      background: #ffffff20;
-      color: #f0f6fc;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-    }
+    .tlp { display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 3px; background: rgba(255,255,255,0.1); color: #f0f6fc; font-weight: 600; letter-spacing: 0.03em; }
   </style>
 </head>
 <body>
@@ -215,9 +163,9 @@ var indexTmplSrc = `<!DOCTYPE html>
             {{range .Feeds}}
             <tr>
               <td><a href="{{.URL}}" target="_blank" rel="noopener">{{.Name}}</a></td>
-              <td>{{range $i, $t := splitTypes .IOCTypes}}<span class="badge">{{$t}}</span>{{end}}</td>
+              <td>{{range .IOCTypes}}<span class="badge">{{.}}</span>{{end}}</td>
               <td style="color:#8b949e;">{{.Category}}</td>
-              <td class="count">{{if gt .Count 0}}{{.Count}}{{else}}&mdash;{{end}}</td>
+              <td class="count">{{if gt .Count 0}}{{.Count}}{{else}}-{{end}}</td>
             </tr>
             {{end}}
           </tbody>
@@ -232,7 +180,7 @@ var indexTmplSrc = `<!DOCTYPE html>
   </div>
 </body>
 </html>
-`
+`))
 
 type Generator struct {
 	cfg *config.Config
@@ -250,7 +198,6 @@ func (g *Generator) Generate() error {
 
 	orgUUID := g.cfg.MISP.OrgUUID
 	if orgUUID == "" {
-		// Deterministic org UUID derived from the org name so it never changes.
 		orgUUID = uuid.NewSHA1(astraNamespace, []byte(g.cfg.MISP.OrgName)).String()
 	}
 	org := Org{Name: g.cfg.MISP.OrgName, UUID: orgUUID}
@@ -273,7 +220,6 @@ func (g *Generator) Generate() error {
 			continue
 		}
 
-		// Deterministic UUID per feed source — stable across runs without persisting state.
 		eventUUID := uuid.NewSHA1(astraNamespace, []byte(source)).String()
 
 		meta, ok := feedMetadata[source]
@@ -336,18 +282,13 @@ func (g *Generator) Generate() error {
 }
 
 func (g *Generator) writeIndex(counts map[string]int, now time.Time) error {
-	order := []string{"feodo_tracker", "urlhaus", "threatfox", "malware_bazaar", "emerging_threats"}
+	feeds := make([]feedRow, len(feedInfo))
+	copy(feeds, feedInfo)
 
-	var feeds []feedDisplay
 	total := 0
-	for _, key := range order {
-		d, ok := feedDisplay_[key]
-		if !ok {
-			continue
-		}
-		d.Count = counts[key]
-		total += d.Count
-		feeds = append(feeds, d)
+	for i, key := range feedKeyOrder {
+		feeds[i].Count = counts[key]
+		total += feeds[i].Count
 	}
 
 	data := indexData{
@@ -359,33 +300,13 @@ func (g *Generator) writeIndex(counts map[string]int, now time.Time) error {
 		Total:     total,
 	}
 
-	tmpl := template.Must(template.New("index").Funcs(template.FuncMap{
-		"splitTypes": func(s string) []string {
-			var out []string
-			start := 0
-			for i := 0; i <= len(s); i++ {
-				if i == len(s) || s[i] == ',' {
-					part := s[start:i]
-					for len(part) > 0 && part[0] == ' ' {
-						part = part[1:]
-					}
-					if part != "" {
-						out = append(out, part)
-					}
-					start = i + 1
-				}
-			}
-			return out
-		},
-	}).Parse(indexTmplSrc))
-
 	f, err := os.Create(filepath.Join(g.cfg.Output.Path, "index.html"))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	if err := tmpl.Execute(f, data); err != nil {
+	if err := indexTmpl.Execute(f, data); err != nil {
 		return fmt.Errorf("executing index template: %w", err)
 	}
 	fmt.Println("  wrote index.html")
