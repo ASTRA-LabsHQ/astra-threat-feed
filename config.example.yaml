@@ -1,0 +1,23 @@
+database:
+  path: "./astra-feed.db"
+
+output:
+  path: "./output"
+
+misp:
+  org_name: "Astra Labs"
+  org_uuid: ""  # leave empty to auto-generate on first run
+
+feeds:
+  feodo_tracker:
+    enabled: true
+  urlhaus:
+    enabled: true
+  threatfox:
+    enabled: true
+    days: 7
+  malware_bazaar:
+    enabled: true
+    limit: 100
+  emerging_threats:
+    enabled: true
