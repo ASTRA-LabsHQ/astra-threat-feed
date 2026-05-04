@@ -30,6 +30,15 @@ jobs:
       - name: Sync feeds
         run: ./astra-feed sync
 
+      - name: Verify output is non-empty
+        run: |
+          count=$(find output -name '*.json' ! -name 'manifest.json' | wc -l)
+          echo "Event files: $count"
+          if [ "$count" -eq 0 ]; then
+            echo "No IOC data was fetched — aborting deploy to protect existing feed."
+            exit 1
+          fi
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
