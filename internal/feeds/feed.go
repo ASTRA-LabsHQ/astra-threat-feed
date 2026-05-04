@@ -1,8 +1,8 @@
 package feeds
 
 import (
-	"github.com/0x-singularity/astra-threat-feed/internal/config"
-	"github.com/0x-singularity/astra-threat-feed/internal/ioc"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/config"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/ioc"
 )
 
 // Feed is the interface all feed sources implement.

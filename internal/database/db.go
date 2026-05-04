@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/0x-singularity/astra-threat-feed/internal/ioc"
-	"github.com/google/uuid"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/ioc"
 	_ "modernc.org/sqlite"
 )
 
@@ -59,12 +58,6 @@ func (d *DB) migrate() error {
 		);
 		CREATE INDEX IF NOT EXISTS idx_iocs_source ON iocs(source);
 		CREATE INDEX IF NOT EXISTS idx_iocs_type   ON iocs(type);
-
-		CREATE TABLE IF NOT EXISTS feed_events (
-			feed_name  TEXT     PRIMARY KEY,
-			event_uuid TEXT     NOT NULL,
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-		);
 
 		CREATE TABLE IF NOT EXISTS sync_log (
 			id        INTEGER  PRIMARY KEY AUTOINCREMENT,
@@ -147,22 +140,6 @@ func (d *DB) GetDistinctSources() ([]string, error) {
 		sources = append(sources, s)
 	}
 	return sources, rows.Err()
-}
-
-func (d *DB) GetOrCreateEventUUID(feedName string) (string, error) {
-	var id string
-	err := d.conn.QueryRow(`SELECT event_uuid FROM feed_events WHERE feed_name = ?`, feedName).Scan(&id)
-	if err == sql.ErrNoRows {
-		id = uuid.New().String()
-		if _, err := d.conn.Exec(`INSERT INTO feed_events (feed_name, event_uuid) VALUES (?, ?)`, feedName, id); err != nil {
-			return "", fmt.Errorf("storing event UUID: %w", err)
-		}
-		return id, nil
-	}
-	if err != nil {
-		return "", fmt.Errorf("querying event UUID: %w", err)
-	}
-	return id, nil
 }
 
 func (d *DB) LogSync(feedName string, count int, status, errMsg string) error {

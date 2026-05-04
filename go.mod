@@ -1,4 +1,4 @@
-module github.com/0x-singularity/astra-threat-feed
+module github.com/ASTRA-LabsHQ/astra-threat-feed
 
 go 1.22
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0x-singularity/astra-threat-feed/internal/ioc"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/ioc"
 )
 
 const urlhausURL = "https://urlhaus.abuse.ch/downloads/text_recent/"

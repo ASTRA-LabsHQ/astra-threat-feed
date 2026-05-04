@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0x-singularity/astra-threat-feed/internal/ioc"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/ioc"
 )
 
 const emergingURL = "https://rules.emergingthreats.net/blockrules/compromised-ips.txt"

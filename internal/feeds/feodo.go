@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0x-singularity/astra-threat-feed/internal/ioc"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/ioc"
 )
 
 const feodoURL = "https://feodotracker.abuse.ch/downloads/ipblocklist.csv"

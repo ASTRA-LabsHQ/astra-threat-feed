@@ -1,20 +1,33 @@
 # astra-threat-feed
 
-A MISP-compatible threat intelligence feed aggregator built in Go. It pulls IOCs from
-free public sources, deduplicates them in a local SQLite database, and generates a
-static MISP feed (manifest + event JSON files) ready to serve over HTTP or GitHub Pages.
+An open-source threat intelligence feed aggregator built in Go. It collects indicators of
+compromise (IOCs) from multiple free, publicly available sources, normalizes and deduplicates
+them in a local SQLite database, and publishes a standards-compliant
+[MISP](https://www.misp-project.org/) feed as static JSON files. The feed is automatically
+refreshed every six hours via GitHub Actions and served through GitHub Pages.
+
+The feed URL is: `https://astra-labshq.github.io/astra-threat-feed/`
 
 ## Feed Sources
 
-| Feed | IOC Types | Notes |
-|------|-----------|-------|
-| [Feodo Tracker](https://feodotracker.abuse.ch/) | IP | Botnet C2 servers |
-| [URLhaus](https://urlhaus.abuse.ch/) | Domain | Malware distribution sites |
+| Source | IOC Types | Category |
+|--------|-----------|----------|
+| [Feodo Tracker](https://feodotracker.abuse.ch/) | IP | Botnet command and control servers |
+| [URLhaus](https://urlhaus.abuse.ch/) | Domain | Active malware distribution sites |
 | [ThreatFox](https://threatfox.abuse.ch/) | IP, Domain, MD5, SHA256 | Mixed malware IOCs |
 | [MalwareBazaar](https://bazaar.abuse.ch/) | MD5, SHA1, SHA256 | Malware file hashes |
 | [Emerging Threats](https://rules.emergingthreats.net/) | IP | Compromised hosts |
 
-All sources are free and require no API keys.
+All sources are free to use and require no API keys.
+
+## IOC Coverage
+
+- **IP addresses** (`ip-dst`): Botnet C2 servers and compromised hosts
+- **Domains** (`domain`): Malware distribution infrastructure
+- **File hashes** (`md5`, `sha1`, `sha256`): Malware samples from MalwareBazaar and ThreatFox
+
+All attributes are tagged with [TLP:CLEAR](https://www.first.org/tlp/) and marked
+`to_ids: true`, indicating they are suitable for use in detection tooling.
 
 ## Requirements
 
@@ -24,7 +37,7 @@ All sources are free and require no API keys.
 
 ```bash
 # Clone the repository
-git clone https://github.com/0x-singularity/astra-threat-feed
+git clone https://github.com/ASTRA-LabsHQ/astra-threat-feed
 cd astra-threat-feed
 
 # Install dependencies
@@ -33,7 +46,7 @@ make tidy
 # Copy and edit the config
 cp config.example.yaml config.yaml
 
-# Fetch IOCs and generate the MISP feed in one step
+# Fetch IOCs from all sources and generate the MISP feed
 make sync
 ```
 
@@ -61,7 +74,7 @@ output:
 
 misp:
   org_name: "Astra Labs"
-  org_uuid: ""              # Leave empty to auto-generate
+  org_uuid: ""              # Leave empty to auto-derive from org name
 
 feeds:
   feodo_tracker:
@@ -78,78 +91,92 @@ feeds:
     enabled: true
 ```
 
-## Repository Layout
-
-```
-astra-threat-feed/
-├── cmd/astra-feed/         CLI entrypoint
-├── internal/
-│   ├── config/             YAML config loading
-│   ├── database/           SQLite storage and deduplication
-│   ├── feeds/              One file per feed source
-│   ├── ioc/                IOC type definitions
-│   └── misp/               MISP event and manifest generation
-├── config.example.yaml     Annotated example config
-└── Makefile                Common tasks (build, sync, clean, etc.)
-```
-
 ## MISP Feed Structure
 
 After running `sync` or `generate`, the `output/` directory contains:
 
 ```
 output/
-├── manifest.json           # Event index consumed by MISP
-├── <uuid>.json             # One event file per feed source
+├── manifest.json       # Event index consumed by MISP
+├── <uuid>.json         # One event file per feed source
 └── ...
 ```
 
-Each feed source maps to a single MISP event with a stable UUID. Subsequent
-runs update the event file in place rather than creating new ones, keeping the
-feed size predictable.
+Each source maps to a single MISP event with a deterministic UUID derived from the source
+name, so the UUID is stable across runs without persisting any state. Attributes carry
+threat level, TLP tag, and category metadata in the MISP format.
 
-## Hosting the Feed
+## Automated Publishing via GitHub Actions
 
-### GitHub Pages
+The workflow at [`.github/workflows/sync.yml`](.github/workflows/sync.yml) runs every six
+hours on a cron schedule (and can be triggered manually from the Actions tab). It:
 
-Push the `output/` directory (or a dedicated `gh-pages` branch) and enable
-GitHub Pages for that path. MISP instances can then subscribe to:
+1. Builds the `astra-feed` binary from source
+2. Runs `astra-feed sync` to pull fresh IOCs and generate MISP JSON files
+3. Pushes the contents of `output/` to the `gh-pages` branch using
+   [peaceiris/actions-gh-pages](https://github.com/peaceiris/actions-gh-pages)
+
+GitHub Pages then serves the `gh-pages` branch at the feed URL above.
+
+### Enabling GitHub Pages
+
+1. Go to the repository **Settings > Pages**
+2. Set the source to **Deploy from a branch**
+3. Select the `gh-pages` branch and the `/ (root)` folder
+4. Save — the feed URL will be active after the first workflow run
+
+### Adding the Feed to a MISP Instance
+
+In your MISP instance, navigate to **Sync Actions > List Feeds > Add Feed** and configure:
+
+| Field | Value |
+|-------|-------|
+| Name | Astra Labs Threat Feed |
+| Provider | Astra Labs |
+| Input Source | Network |
+| URL | `https://astra-labshq.github.io/astra-threat-feed/` |
+| Feed format | MISP Feed |
+
+## Repository Layout
 
 ```
-https://<user>.github.io/<repo>/
+astra-threat-feed/
+├── .github/workflows/sync.yml   Scheduled sync and GitHub Pages deployment
+├── cmd/astra-feed/              CLI entrypoint
+├── internal/
+│   ├── config/                  YAML config loading
+│   ├── database/                SQLite storage and IOC deduplication
+│   ├── feeds/                   One file per feed source
+│   ├── ioc/                     IOC type definitions and MISP category mapping
+│   └── misp/                    MISP event and manifest generation
+├── config.example.yaml          Annotated example configuration
+└── Makefile                     Common tasks: build, sync, fetch, generate, stats
 ```
 
-### Any Web Server
-
-Serve the `output/` directory as static files. MISP requires the server to
-return `Content-Type: application/json` for `.json` files; most servers handle
-this automatically.
-
-### Adding the Feed to MISP
-
-In your MISP instance, go to **Sync Actions > List Feeds > Add Feed** and
-enter the URL pointing to the `output/` directory. Set the format to
-**MISP Feed**.
-
-## Automating Updates
-
-Use cron to keep the feed current. For example, to sync every six hours:
-
-```cron
-0 */6 * * * cd /path/to/astra-threat-feed && ./astra-feed sync >> /var/log/astra-feed.log 2>&1
-```
+The `.claude/` directory contains AI-assisted development tooling and is excluded from the
+repository via `.gitignore`.
 
 ## Contributing
 
 Contributions are welcome. To add a new feed source:
 
-1. Create `internal/feeds/<name>.go` implementing the `feeds.Feed` interface.
+1. Create `internal/feeds/<name>.go` implementing the `feeds.Feed` interface
+   (two methods: `Name() string` and `Fetch() ([]ioc.IOC, error)`).
 2. Register it in `internal/feeds/feed.go` inside `All()`.
 3. Add the corresponding config fields to `internal/config/config.go` and `config.example.yaml`.
-4. Add feed metadata (event info, threat level, tags) to `feedMetadata` in `internal/misp/generator.go`.
-5. Open a pull request with a brief description of the source and any licensing considerations.
+4. Add feed metadata (event description, MISP threat level, tags) to `feedMetadata` in
+   `internal/misp/generator.go`.
+5. Open a pull request with a brief description of the source and any licensing notes.
 
-Please ensure any new feed source is freely accessible without account registration.
+Please ensure any new source is freely accessible without account registration.
+
+## Automating Updates Locally
+
+To run the sync on your own schedule instead of using GitHub Actions:
+
+```cron
+0 */6 * * * cd /path/to/astra-threat-feed && ./astra-feed sync >> /var/log/astra-feed.log 2>&1
+```
 
 ## License
 

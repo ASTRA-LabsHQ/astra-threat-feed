@@ -6,10 +6,10 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/0x-singularity/astra-threat-feed/internal/config"
-	"github.com/0x-singularity/astra-threat-feed/internal/database"
-	"github.com/0x-singularity/astra-threat-feed/internal/feeds"
-	"github.com/0x-singularity/astra-threat-feed/internal/misp"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/config"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/database"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/feeds"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/misp"
 )
 
 func main() {

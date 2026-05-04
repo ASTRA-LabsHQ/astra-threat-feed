@@ -8,11 +8,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0x-singularity/astra-threat-feed/internal/config"
-	"github.com/0x-singularity/astra-threat-feed/internal/database"
-	"github.com/0x-singularity/astra-threat-feed/internal/ioc"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/config"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/database"
+	"github.com/ASTRA-LabsHQ/astra-threat-feed/internal/ioc"
 	"github.com/google/uuid"
 )
+
+// astraNamespace is the fixed UUID v5 namespace for all Astra Labs MISP identifiers.
+// Changing this value would alter all event and org UUIDs, breaking existing MISP subscriptions.
+var astraNamespace = uuid.MustParse("4a73b2c1-9e4f-4d8a-b3e7-2f1c8d5a9b0e")
 
 type feedMeta struct {
 	info        string
@@ -64,7 +68,8 @@ func (g *Generator) Generate() error {
 
 	orgUUID := g.cfg.MISP.OrgUUID
 	if orgUUID == "" {
-		orgUUID = uuid.New().String()
+		// Deterministic org UUID derived from the org name so it never changes.
+		orgUUID = uuid.NewSHA1(astraNamespace, []byte(g.cfg.MISP.OrgName)).String()
 	}
 	org := Org{Name: g.cfg.MISP.OrgName, UUID: orgUUID}
 
@@ -85,10 +90,8 @@ func (g *Generator) Generate() error {
 			continue
 		}
 
-		eventUUID, err := g.db.GetOrCreateEventUUID(source)
-		if err != nil {
-			return fmt.Errorf("getting event UUID for %s: %w", source, err)
-		}
+		// Deterministic UUID per feed source — stable across runs without persisting state.
+		eventUUID := uuid.NewSHA1(astraNamespace, []byte(source)).String()
 
 		meta, ok := feedMetadata[source]
 		if !ok {
