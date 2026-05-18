@@ -1,0 +1,79 @@
+{
+  "Event": {
+    "uuid": "3b2a373a-8b70-5966-a9bd-6c45dc0bae5e",
+    "info": "Botnet Command and Control IPs - Feodo Tracker",
+    "date": "2026-05-18",
+    "threat_level_id": "1",
+    "analysis": "2",
+    "distribution": "3",
+    "published": true,
+    "timestamp": "1779098678",
+    "Org": {
+      "name": "Astra Labs",
+      "uuid": "b92c6ca1-b970-53ba-a0b4-c6e1bf48d7c3",
+      "local": false
+    },
+    "Orgc": {
+      "name": "Astra Labs",
+      "uuid": "b92c6ca1-b970-53ba-a0b4-c6e1bf48d7c3",
+      "local": false
+    },
+    "Tag": [
+      {
+        "name": "tlp:clear",
+        "colour": "#ffffff"
+      },
+      {
+        "name": "type:botnet-c2",
+        "colour": "#ff6600"
+      }
+    ],
+    "Attribute": [
+      {
+        "uuid": "38b9270f-ce9c-45d2-b369-6df78cbd0aa7",
+        "type": "ip-dst",
+        "category": "Network activity",
+        "value": "27.133.154.218",
+        "comment": "Botnet C2 - QakBot",
+        "to_ids": true,
+        "timestamp": "1779098678"
+      },
+      {
+        "uuid": "b551bb72-911c-44e5-a9f6-6ebf503f14bf",
+        "type": "ip-dst",
+        "category": "Network activity",
+        "value": "178.62.3.223",
+        "comment": "Botnet C2 - QakBot",
+        "to_ids": true,
+        "timestamp": "1779098678"
+      },
+      {
+        "uuid": "deae4758-dd35-4187-b9db-3bc2526b4e37",
+        "type": "ip-dst",
+        "category": "Network activity",
+        "value": "34.204.119.63",
+        "comment": "Botnet C2 - QakBot",
+        "to_ids": true,
+        "timestamp": "1779098678"
+      },
+      {
+        "uuid": "fe592382-c70c-4a8a-8ebe-4291694ec31d",
+        "type": "ip-dst",
+        "category": "Network activity",
+        "value": "50.16.16.211",
+        "comment": "Botnet C2 - QakBot",
+        "to_ids": true,
+        "timestamp": "1779098678"
+      },
+      {
+        "uuid": "4df92fba-99e9-4410-9787-a4666406bbc8",
+        "type": "ip-dst",
+        "category": "Network activity",
+        "value": "162.243.103.246",
+        "comment": "Botnet C2 - Emotet",
+        "to_ids": true,
+        "timestamp": "1779098678"
+      }
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "3b2a373a-8b70-5966-a9bd-6c45dc0bae5e": {
+    "Orgc": {
+      "name": "Astra Labs",
+      "uuid": "b92c6ca1-b970-53ba-a0b4-c6e1bf48d7c3",
+      "local": false
+    },
+    "Tag": [
+      {
+        "name": "tlp:clear",
+        "colour": "#ffffff"
+      },
+      {
+        "name": "type:botnet-c2",
+        "colour": "#ff6600"
+      }
+    ],
+    "info": "Botnet Command and Control IPs - Feodo Tracker",
+    "date": "2026-05-18",
+    "analysis": "2",
+    "threat_level_id": "1",
+    "timestamp": "1779098678",
+    "uuid": "3b2a373a-8b70-5966-a9bd-6c45dc0bae5e"
+  },
+  "618afd2e-5465-52ef-8c6d-77b0ba15cd26": {
+    "Orgc": {
+      "name": "Astra Labs",
+      "uuid": "b92c6ca1-b970-53ba-a0b4-c6e1bf48d7c3",
+      "local": false
+    },
+    "Tag": [
+      {
+        "name": "tlp:clear",
+        "colour": "#ffffff"
+      },
+      {
+        "name": "type:malware-distribution",
+        "colour": "#cc0000"
+      }
+    ],
+    "info": "Malware Distribution Domains - URLhaus",
+    "date": "2026-05-18",
+    "analysis": "2",
+    "threat_level_id": "1",
+    "timestamp": "1779098678",
+    "uuid": "618afd2e-5465-52ef-8c6d-77b0ba15cd26"
+  },
+  "f560b4b1-f03c-5e99-b0ab-7716212dddb3": {
+    "Orgc": {
+      "name": "Astra Labs",
+      "uuid": "b92c6ca1-b970-53ba-a0b4-c6e1bf48d7c3",
+      "local": false
+    },
+    "Tag": [
+      {
+        "name": "tlp:clear",
+        "colour": "#ffffff"
+      },
+      {
+        "name": "type:compromised",
+        "colour": "#ff9900"
+      }
+    ],
+    "info": "Compromised Host IPs - Emerging Threats",
+    "date": "2026-05-18",
+    "analysis": "2",
+    "threat_level_id": "2",
+    "timestamp": "1779098678",
+    "uuid": "f560b4b1-f03c-5e99-b0ab-7716212dddb3"
+  }
+}
